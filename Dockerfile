@@ -1,5 +1,5 @@
 # Use the official Node.js image from the Docker Hub
-FROM node:12.22.9
+FROM node:22.7.0
 
 # Create and set the working directory
 WORKDIR /usr/src/app
@@ -17,5 +17,5 @@ COPY . .
 EXPOSE 3000
 
 # Command to run the application
-CMD ["node", "app.js"]
+CMD ["node", "server.js"]
 
