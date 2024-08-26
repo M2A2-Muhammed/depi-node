@@ -10,7 +10,7 @@ on:
       - 'release/**'
 
 env:
-  node_version: 12.22.9
+  node_version: 22.7.0
   img_name: depi-node-app
 
 jobs:
