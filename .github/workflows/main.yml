@@ -1,0 +1,125 @@
+name: dockerize app and push to github
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+      - 'release/**'
+
+env:
+  node-version: 12.22.9
+  img-name: depi-node-app
+
+jobs:
+  unit-testing:
+    name: unit testing
+    runs-on: buntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup node js $node-version
+        uses: actions/setup-node@v4
+        with:
+          node-version: $node-version
+
+      - name: install depend.
+        run: npm install
+
+      - name: unit testing
+        id: nodejs-unit-testing-step
+        run: npm test
+
+      - name: archive test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.xml
+          retention-days: 1
+
+  code-coverage:
+    name: code coverage
+    runs-on: ubuntu-latest
+    # needs:
+    #   - unit-testing
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup node js v20
+        uses: actions/setup-node@v4
+        with:
+          node-version: $node-version
+
+      - name: install depend.
+        run: npm install
+
+      - name: check code coverge
+        continue-on-error: true
+        run: npm run coverage
+
+      - name: archive code coverage results
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: coverage
+          retention-days: 1
+
+  build-test-docker:
+    name: test docker
+    needs: [unit-testing, code-coverage]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: build docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/$img-name:${{ github.sha }}
+
+      - name: run docker
+        run: |
+          docker image ls
+          docker run --name $img-name -d \
+                      -p 5000:3000 \
+                      ${{ vars.DOCKERHUB_USERNAME }}/$img-name:${{ github.sha }}
+
+          export IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $img-name)
+          echo $IP
+
+          echo Testing Image URL using wget
+          wget -q -O - localhost:5000/live | grep live
+
+  push-image-dockerhub:
+    name: publish container to docker hub
+    needs: [build-test-docker]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: login docker hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: push image to docker hub
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/$img-name:${{ github.sha }}
