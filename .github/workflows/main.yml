@@ -92,7 +92,7 @@ jobs:
         run: |
           echo list docker images
           docker image ls
-          echo run image ${{ env.img_name }}
+          echo run image ${{ vars.DOCKERHUB_USERNAME }}/${{ env.img_name }}:test
           docker run --name ${{ env.img_name }} -d \
                       -p 5000:3000 \
                       ${{ vars.DOCKERHUB_USERNAME }}/${{ env.img_name }}:test
@@ -101,7 +101,7 @@ jobs:
           echo $IP
 
           echo Testing Image URL using wget
-          wget -q -O - localhost:5000/live | grep live
+          wget -q -O - localhost:5000/ | grep hello
 
   push-image-dockerhub:
     name: publish container to docker hub
