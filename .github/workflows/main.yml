@@ -101,7 +101,7 @@ jobs:
           echo $IP
 
           echo Testing Image URL using wget
-          wget -q -O - localhost:5000/ | grep hello
+          wget -q -O - localhost:5000/ | grep Hello
 
   push-image-dockerhub:
     name: publish container to docker hub
