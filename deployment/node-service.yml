@@ -7,6 +7,7 @@ spec:
     app: node
   ports:
     - protocol: TCP
-      port: 5000
+      port: is th
       targetPort: 3000
-  type: LoadBalancer
+      nodePort: 30777
+  type: NodePort
